@@ -25,10 +25,6 @@ GArray * fileList(char const *dir,int *count){
 
   GArray *garray;
   garray = g_array_new (FALSE, FALSE, sizeof (FILENAME));
-  //GSList *list = NULL;
-
-  //char *item;
-  uint i=0;
 
   DIR *directory;
   struct dirent *fileList;
@@ -40,51 +36,54 @@ GArray * fileList(char const *dir,int *count){
       if(g_strcmp0(filename,".")!=0&&g_strcmp0(filename,"..")!=0){
 
         //printf("%s\n", filename);
-        g_array_append_val (garray, g_strconcat(dir,filename,NULL));
+        filename=g_strconcat(dir,filename,NULL);
+        g_array_append_val (garray,filename);
         //item = g_string_new(filename);
         (*count)++;
       }
     }
     closedir(directory);
   }
-
   return garray;
 }
 
-void indexing(GArray *array){
+void indexing(GArray *array,int count){
   printf("=====\nInverted indexing\n");
   gchar *filename=NULL;
   gchar *contents=NULL;
   gsize *length=NULL;
   GError *error=NULL;
+  int i=0;
+  for(i=0;i<count;i++){
+    filename = g_array_index(array, FILENAME, i);
+    printf("%s\n", filename);
+    int f = g_file_get_contents (filename,&contents,length,&error);
+    printf("%s\n",contents );
+    if(!f){
+      printf("%s\n",error->message );
+    }
+    //free memory of file that was indexed
+  }
 
-  filename = g_array_index(array, FILENAME, 0);
-  printf("%s\n", filename);
-  int f = g_file_get_contents ("tiny/data/file1.txt",&contents,length,&error);
-  printf("%d\n",f );
-  printf("%s\n",contents );
-  //printf("%s\n",error->message );
-
-  //free file memory that was indexed
 }
 
 int main(int argc, char const *argv[])
 {
   printf("Hello param: %s\n",argv[1]);
-  int size=0;
+  int count=0;
   char *filename;
   GArray *filearray;
-  uint i=0;
+  int i=0;
 
-  filearray=fileList(argv[1],&size);
-  printf("%d\n", size);
+  filearray=fileList(argv[1],&count);
+  printf("%d\n", count);
 
-  for (i = 0; i < size; ++i)
+  for (i = 0; i < count; ++i)
   {
     filename = g_array_index(filearray, FILENAME, i);
     printf("%s\n", filename);
   }
-  indexing(filearray);
+  indexing(filearray,count);
 
 
   return 0;

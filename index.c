@@ -15,16 +15,48 @@ struct node
   GSList *link;
 };
 
+void indexing(const gchar *contents){
+   GHashTable* hashTB = g_hash_table_new(g_str_hash, g_direct_equal);
+}
 
-/*
-* Must ignore "." and ".."
-*
-*/
-GArray * fileList(char const *dir,int *count){
-  *count=0;
+//Read file by asc order
+void readfile(const char *dir,int count){
+  printf("=====\nRead file\n");
+  gchar *filename=NULL;
+  gchar *contents=NULL;
+  gsize *length=NULL;
+  GError *error=NULL;
+  int i;
+  for(i=1;i<=count;i++){
 
-  GArray *garray;
-  garray = g_array_new (FALSE, FALSE, sizeof (FILENAME));
+	char fn[8];
+	sprintf(fn, "%d", i);
+
+  	/*
+  	//TODO : when
+  	with / Dir = data/ 
+  	with out / Dir = data
+  	*/
+    filename = g_strconcat(dir,"/file",fn,".txt",NULL);//g_array_index(array, FILENAME, i);
+
+    //printf("fn : %s\n", filename);
+    int f = g_file_get_contents (filename,&contents,length,&error);
+    //printf("%s\n",contents );
+    if(!f){ // Use for check file open status
+    	printf("fn : %s\n", filename);
+      printf("%s\n",error->message );
+    }else{
+    	printf("fn : %s\n", filename);
+    }
+    //free memory of file that was indexed
+
+  }
+  indexing(contents);
+}
+
+int fileCount(char const *dir){
+  int count=0;
+
 
   DIR *directory;
   struct dirent *fileList;
@@ -34,37 +66,12 @@ GArray * fileList(char const *dir,int *count){
     {
       char *filename=fileList->d_name;
       if(g_strcmp0(filename,".")!=0&&g_strcmp0(filename,"..")!=0){
-
-        //printf("%s\n", filename);
-        filename=g_strconcat(dir,filename,NULL);
-        g_array_append_val (garray,filename);
-        //item = g_string_new(filename);
-        (*count)++;
+        count++;
       }
     }
     closedir(directory);
   }
-  return garray;
-}
-
-void indexing(GArray *array,int count){
-  printf("=====\nInverted indexing\n");
-  gchar *filename=NULL;
-  gchar *contents=NULL;
-  gsize *length=NULL;
-  GError *error=NULL;
-  int i=0;
-  for(i=0;i<count;i++){
-    filename = g_array_index(array, FILENAME, i);
-    printf("%s\n", filename);
-    int f = g_file_get_contents (filename,&contents,length,&error);
-    printf("%s\n",contents );
-    if(!f){
-      printf("%s\n",error->message );
-    }
-    //free memory of file that was indexed
-  }
-
+  return count;
 }
 
 int main(int argc, char const *argv[])
@@ -75,6 +82,11 @@ int main(int argc, char const *argv[])
   GArray *filearray;
   int i=0;
 
+  count=fileCount(argv[1]);
+  printf("No : %d\n",count);
+  readfile(argv[1],count);
+
+/*
   filearray=fileList(argv[1],&count);
   printf("%d\n", count);
 
@@ -83,8 +95,7 @@ int main(int argc, char const *argv[])
     filename = g_array_index(filearray, FILENAME, i);
     printf("%s\n", filename);
   }
-  indexing(filearray,count);
-
-
+  readfile(filearray,count);
+*/
   return 0;
 }

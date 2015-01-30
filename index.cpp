@@ -2,15 +2,44 @@
 //#include <sys/types.h>
 #include <dirent.h>
 //#include <errno.h>
-#include <vector>
+#include <list>
 #include <string>
 #include <iostream>
 #include <fstream>
 
-#include <glib.h>
-
 
 using namespace std;
+
+class Node
+{
+public:
+    string word;
+    list<int> file;
+    Node(string w){
+        word=w;
+    }
+
+    bool add(int fn){
+        //list<int>::iterator it=mylist.end()
+        //.empty()
+        if(file.empty()||file.back()!=fn){
+            file.push_back(fn);
+            return true;
+        }
+        return false;
+    }
+    string getAll(){
+        string all=word+":"+to_string(file.size())+":";
+        for (list<int>::iterator it = file.begin(); it != file.end(); it++){
+            all+=to_string(*it);
+            all+=",";
+        }
+
+        return all.substr(0, all.size()-1);
+    }
+
+    //~Node();
+};
 
 /*function... might want it in some class?*/
 /*
@@ -19,70 +48,53 @@ List file and read it to
 */
 int fileCount (string dir)
 {
-	int count=0;
+    int count=0;
     DIR *dp;
     struct dirent *dirp;
-	string filename;
-	string word;
-	ifstream infile;
+    string filename;
+    string word;
+    ifstream infile;
     if((dp  = opendir(dir.c_str())) == NULL) {
-    	cout<<"Error : Can't open directory"<<endl;
+        cout<<"Error : Can't open directory"<<endl;
         exit(1);
     }
     while ((dirp = readdir(dp)) != NULL) {
         //count++;
         //-----------------------------
         filename=dir+"/file"+to_string(++count)+".txt";
-		cout<<filename<<endl;
-		infile.open(filename);
-	    while(1)
-	    {
-	    	//getline(infile, word);
-	    	infile>>word;
-	    	if (infile.fail()||infile.eof())
-	    		break;
-	    	cout << word << endl;
-	    	// Indexing
-	    }
-	    infile.close();
+        cout<<filename<<endl;
+        infile.open(filename);
+        while(1)
+        {
+            //getline(infile, word);
+            infile>>word;
+            if (infile.fail()||infile.eof())
+                break;
+            cout << word << endl;
+            // Indexing
+        }
+        infile.close();
         //-----------------------------
     }
     closedir(dp);
     return count-2;
 }
-/*
-void readfile(string dir,int count)
-{
-	string word;
-	ifstream infile;
-	string filename;
-
-	for (int i = 1; i <= count; ++i)
-	{
-		filename=dir+"/file"+to_string(i)+".txt";
-		//cout<<filename<<endl;
-		infile.open(filename);
-	    while(1)
-	    {
-	    	//getline(infile, word);
-	    	infile>>word;
-	    	if (infile.fail()||infile.eof())
-	    		break;
-	    	//cout << word << endl;
-	    }
-	    infile.close();
-	}
-}
-*/
 
 int main(int argc, char* const argv[])
 {
     string dir = string(argv[1]);
-    vector<string> files = vector<string>();
+    
     //cout<<dir<<endl;
     int count=fileCount(dir);
     cout<<"Count"<<count<<endl;
+    Node i1= Node("hello");
+    i1.add(1);
+    i1.add(2);
+    i1.add(3);
+    cout<<i1.getAll()<<endl;
 
 
+//-----------------------------------
+    
     return 0;
 }

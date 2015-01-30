@@ -4,6 +4,6 @@
 	#g++  -o index index.cpp
 all: index
 index: index.cpp
-	g++ `pkg-config --cflags --libs glib-2.0` -lpthread --std=c++11  -o index index.cpp
+	g++ --std=c++11  -o index index.cpp
 clean:
 	$(RM) index

@@ -3,7 +3,7 @@
 #include <dirent.h>
 //#include <errno.h>
 #include <list>
-#include <map>
+#include <unordered_map>
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -24,12 +24,12 @@ class Node
 {
 public:
     string word;
-    list<string> filename;
+    list<int> filename;
     Node(string w){
         word=w;
     }
 
-    bool add(string fn){
+    bool add(int fn){
         if(filename.empty()||filename.back()!=fn){
             filename.push_back(fn);
             return true;
@@ -38,17 +38,19 @@ public:
     }
     string getAll(){
         string all=word+":"+to_string(filename.size())+":";
-        for (list<string>::iterator it = filename.begin(); it != filename.end(); it++)
-            all+=(*it)+",";
+        for (list<int>::iterator it = filename.begin(); it != filename.end(); it++)
+            all+=to_string(*it)+",";
         return all.substr(0, all.size()-1);
     }
 
     //~Node();
 };
 
-map <string, Node *> allmap;
-void indexing(string word,string filename){
-    map<string, Node *>::iterator it;
+//map <string, Node *> allmap;
+unordered_map<string, Node *> allmap;
+
+void indexing(string word,int filename){
+    unordered_map<string, Node *>::iterator it;
     it=allmap.find(word);
     Node *n;
     if(it!=allmap.end()){
@@ -60,9 +62,9 @@ void indexing(string word,string filename){
     }else{
         n = new Node(word);
     }
-        n->add(filename);
-        allmap[word]=n;
-        //cout<<"1:"<<n->getAll()<<endl;
+    n->add(filename);
+    allmap[word]=n;
+    //cout<<"1:"<<n->getAll()<<endl;
 
 }
 
@@ -99,8 +101,9 @@ int fileCount (string dir)
 
                 break;
             //cout << word << endl;
+
             // Indexing
-            indexing(word,to_string(count));
+            indexing(word,(count));
         }
         infile.close();
         //-----------------------------
@@ -117,13 +120,19 @@ int main(int argc, char* const argv[])
 
     int count=fileCount(dir);
     cout<<"Count"<<count<<endl;
-
+    if(count>3000)
+        allmap.reserve(400000);
+    else if(count>6500) {
+        allmap.reserve(1340000);
+    }else{
+        allmap.reserve(255000);
+    }
 
 //-----------------------------------
 
-    cout<<"map"<<allmap.size()<<endl;
     /*for (auto& x: allmap) {
-        std::cout <<(x.second)->getAll() << endl;
+        cout << (x.second)->getAll() << endl;
     }*/
+
     return 0;
 }

@@ -4,6 +4,6 @@
 	#g++  -o index index.cpp
 all: index
 index: index.cpp
-	g++ --std=c++11  -o index index.cpp
+	g++ --std=c++11 -pthread -o index index.cpp
 clean:
 	$(RM) index

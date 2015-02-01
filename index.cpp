@@ -1,18 +1,20 @@
+#include <algorithm>
 #include <cstdlib>
 //#include <sys/types.h>
 #include <dirent.h>
 //#include <errno.h>
+#include <regex>
 #include <list>
 #include <unordered_map>
 #include <string>
 #include <iostream>
 #include <fstream>
-
+#include <thread> 
 
 using namespace std;
 
 
-
+//thread first;
 /*
 Node i1= Node("hello");
 i1.add(1);
@@ -28,7 +30,6 @@ public:
     Node(string w){
         word=w;
     }
-
     bool add(int fn){
         if(filename.empty()||filename.back()!=fn){
             filename.push_back(fn);
@@ -42,76 +43,101 @@ public:
             all+=to_string(*it)+",";
         return all.substr(0, all.size()-1);
     }
-
     //~Node();
 };
 
 //map <string, Node *> allmap;
 unordered_map<string, Node *> allmap;
 
-void indexing(string word,int filename){
-    unordered_map<string, Node *>::iterator it;
-    it=allmap.find(word);
-    Node *n;
-    if(it!=allmap.end()){
-        //cout<<"In:"<<(it->second)->getAll()<<endl;
-        n = it->second;
-        //n->add(filename);
+char easytolower(char in){
+  if(in<='Z' && in>='A')
+    return in-('Z'-'z');
+  return in;
+} 
 
-     //   cout<<"2:"<<(it->second)->getAll()<<endl;
-    }else{
-        n = new Node(word);
-    }
+void indexing(string word,int filename){
+    transform(word.begin(), word.end(), word.begin(), easytolower);
+    unordered_map<string, Node *>::iterator it;
+
+    Node *n;
+    n = new Node(word);
     n->add(filename);
-    allmap[word]=n;
+    pair<unordered_map<string, Node *>::iterator, bool>  status=allmap.emplace(word,n);
+    //cout<<"1:"<<n->getAll()<<endl;
+    n=allmap[word];
+    if(!status.second){
+        n=allmap[word];
+        //cout<<"2:"<<n->getAll()<<endl;
+        n->add(filename);
+        allmap[word]=n;
+    }
+
+/*
+    it=allmap.find(word);
+    if(it==allmap.end()){
+    }else{
+        n = it->second;
+    }
+    */
     //cout<<"1:"<<n->getAll()<<endl;
 
 }
 
-/*function... might want it in some class?*/
+
 /*
 List file and read it to 
-
 */
-int fileCount (string dir)
+int wc=0;
+void fileRead(string dir,int count)
 {
-    int count=0;
-    DIR *dp;
-    struct dirent *dirp;
+    regex alphab("[a-zA-Z]+");
     string filename;
     string word;
     ifstream infile;
-    if((dp  = opendir(dir.c_str())) == NULL) {
-        cout<<"Error : Can't open directory"<<endl;
-        exit(1);
-    }
-
-
-
-    while ((dirp = readdir(dp)) != NULL) {
-        //count++;
+    for (int i = 1; i <= count; i++)
+    {
         //-----------------------------
-        filename=dir+"/file"+to_string(++count)+".txt";
+        filename=dir+"/file"+to_string(i)+".txt";
         //cout<<filename<<endl;
         infile.open(filename);
         while(1)
         {
             infile>>word;
             if (infile.fail()||infile.eof())
-
                 break;
             //cout << word << endl;
-
             // Indexing
-            indexing(word,(count));
+            if(regex_match(word,alphab)){
+                wc++;
+                indexing(word,i);
+                //first=thread(indexing,word,(count));
+            }
         }
         infile.close();
         //-----------------------------
     }
+}
+
+
+/*function... might want it in some class?*/
+/*
+List file and read it to 
+*/
+int fileCount (string dir)
+{
+    int count=0;
+    DIR *dp;
+    struct dirent *dirp;
+    if((dp  = opendir(dir.c_str())) == NULL) {
+        cout<<"Error : Can't open directory"<<endl;
+        exit(1);
+    }
+    while ((dirp = readdir(dp)) != NULL) count++;
     closedir(dp);
     return count-2;
 }
 
+//thread first;
 int main(int argc, char* const argv[])
 {
     string dir = string(argv[1]);
@@ -120,16 +146,21 @@ int main(int argc, char* const argv[])
 
     int count=fileCount(dir);
     cout<<"Count"<<count<<endl;
-    if(count>3000)
-        allmap.reserve(400000);
-    else if(count>6500) {
-        allmap.reserve(1340000);
-    }else{
-        allmap.reserve(255000);
-    }
+    // if(count>3000)
+    //     allmap.reserve(400000);
+    // else if(count>6500) {
+    //     allmap.reserve(1340000);
+    // }else{
+    //     allmap.reserve(255000);
+    // }
+    cout<<"MAXMAP:"<<allmap.max_size()<<endl;
+    fileRead(dir,count);
+
+    //first.join();
 
 //-----------------------------------
-
+    cout<<"MAP:"<<allmap.size()<<endl;
+    cout<<"WRD:"<<wc<<endl;
     /*for (auto& x: allmap) {
         cout << (x.second)->getAll() << endl;
     }*/

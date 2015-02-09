@@ -1,13 +1,8 @@
-// TODO : ifstream problem in < v 4.8.2 must use .c_str()
-#include <algorithm>
 #include <cstdlib>
-//#include <sys/types.h>
 #include <dirent.h>
-//#include <errno.h>
-#include <ctype.h>
-
-#include <regex>
+#include <forward_list>
 #include <list>
+#include <queue>
 #include <map>
 #include <unordered_map>
 #include <string>
@@ -15,18 +10,21 @@
 #include <fstream>
 #include <sstream>
 #include <thread>
+#include <algorithm>
+
+#include <ctime>
+#include <ratio>
+#include <chrono>
 
 using namespace std;
+
+bool haveNext=true;
 
 class Node
 {
 public:
-  string word;
   list<int> filename;
   Node(){
-  }
-  Node(string w){
-    word=w;
   }
   bool add(int fn){
     if(filename.empty()||filename.back()!=fn){
@@ -37,12 +35,11 @@ public:
   }
 
   string getAll(){
-    string all=word+":"+to_string(filename.size())+":";
+    string all=":"+to_string(filename.size())+":";
     for (list<int>::iterator it = filename.begin(); it != filename.end(); it++)
       all+=to_string(*it)+",";
     return all.substr(0, all.size()-1);
   }
-    //~Node();
 };
 
 
@@ -52,20 +49,21 @@ char easytolower(char in){
   return in;
 }
 
-unordered_map<string, Node> allmap;
+
+queue<pair<string,int>> word_queue;
+
+static unordered_map<string, Node*> allmap;
+static chrono::duration<double> time_span;
+
 void indexing(string word,int filename){
   transform(word.begin(), word.end(), word.begin(), easytolower);
-  unordered_map<string, Node >::iterator it;
-
-  Node n = Node(word);
-  n.add(filename);
-  pair<unordered_map<string, Node>::iterator, bool>  status=allmap.emplace(word,n);
+  Node *n = new Node();
+  n->add(filename);
+  pair<unordered_map<string, Node*>::iterator, bool>  status=allmap.emplace(word,n);
 
   if(!status.second){
-    
-    //TODO : Check is this file already in the list
-    
-    allmap[word].add(filename);
+    allmap[word]->add(filename);
+    delete n;
   }
 }
 
@@ -81,42 +79,32 @@ List file and read it to
 */
 void fileRead(string dir,int count)
 {
-  regex alphab("[a-zA-Z]+");
   string filename;
   string word="";
   ifstream infile;
   for (int i = 1; i <= count; i++)
   {
-    //-----------------------------
     filename=dir+"/file"+to_string(i)+".txt";
-    //cout<<filename<<endl;
-    infile.open(filename);
+    infile.open(filename.c_str());
     char ch;
     while((ch = infile.get())!=EOF)
     {
-      //cout << word;
       if(isalpha(ch)){
         word +=ch;
       }else{
         if(word.size()>0){
-          indexing(word,i);
-          //cout<<word<<endl;
+//          indexing(word,i);
+          word_queue.push(make_pair(word,i));
         }
         word="";
       }
     }
     infile.close();
-    //-----------------------------
   }
-
-  //---------------------------------------
-  
+  haveNext=false;
 }
 
-//TODO change to read until Can't read
-/*
-List file and read it to 
-*/
+
 int fileCount (string dir)
 {
   int count=0;
@@ -131,44 +119,49 @@ int fileCount (string dir)
   return count-2;
 }
 
-//thread first;
+void job2(){
+  while(haveNext||!word_queue.empty()){
+    if(!word_queue.empty()){
+      pair<string,int> w=word_queue.front();
+//      indexing(w.first,w.second);
+     word_queue.pop();
+    }
+  }
+}
+
 int main(int argc, char* const argv[])
 {
+  thread job(job2);
   string dir = string(argv[1]);
-
   cout<<dir<<endl;
-
   int count=fileCount(dir);
- 
-  cout<<"Count"<<count<<endl;
-//
   if(count>3000)
       allmap.reserve(600000);
   else if(count>6500) {
-      allmap.reserve(1400000);
+      allmap.reserve(2400000);
   }else{
       allmap.reserve(400000);
   }
 
   fileRead(dir,count);
+  job.join();
 
   ofstream of;
   of.open("output");
   of<<allmap.size()<<endl;
-  map<string, Node> ordered(allmap.begin(), allmap.end());
-
+  map<string, Node*> ordered(allmap.begin(), allmap.end());
+  allmap.clear();
   for(auto it = ordered.begin(); it != ordered.end(); ++it){
-    //std::cout << it->second;
-    of<<(it->second).getAll()<<endl;
+    of<<(it->first);
+    of<<(it->second)->getAll()<<endl;
   }
-
   of.close();
 
+  chrono::high_resolution_clock::time_point t1=chrono::high_resolution_clock::now();
+  chrono::high_resolution_clock::time_point t2=chrono::high_resolution_clock::now();
 
-  //-----------------------------------
-  /*for (auto& x: allmap) {
-      cout << (x.second).getAll() << endl;
-  }*/
-  cout<<"MAP:"<<allmap.size()<<endl;
+  time_span=chrono::duration_cast<chrono::duration<double>>(t2 - t1);
+  cout<<time_span.count()<<endl;
+
   return 0;
 }

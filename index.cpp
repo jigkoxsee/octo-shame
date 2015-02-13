@@ -149,12 +149,18 @@ int main(int argc, char* const argv[])
   }
   cout<<count<<endl;
 //  fileRead(dir,count);
-  thread j1(fileRead,dir,0,1000);
-  thread j2(fileRead,dir,1001,2000);
-  thread j3(fileRead,dir,2001,3000);
+  int half=count/2;
+  //TODO  : small thread >2 => nothing
+  //        Medium => more is better
+  //        Large => CPU utilize not 100%
+  thread j1(fileRead,dir,0,half/2);
+  thread j2(fileRead,dir,1+half/2,half);
+  thread j3(fileRead,dir,1+half,count-half);
+  thread j4(fileRead,dir,count-half+1,count);
   j1.join();
   j2.join();
   j3.join();
+  j4.join();
 /*
   job.join();
 

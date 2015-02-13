@@ -11,6 +11,7 @@
 #include <fstream>
 #include <sstream>
 #include <thread>
+#include <mutex>
 #include <algorithm>
 
 #include <ctime>
@@ -20,6 +21,14 @@
 using namespace std;
 
 bool haveNext=true;
+
+mutex mtex;
+
+
+chrono::high_resolution_clock::time_point t1;
+chrono::high_resolution_clock::time_point t2;
+
+chrono::duration<double> time_span=(chrono::duration<double>)(0);
 
 class Node
 {
@@ -54,18 +63,19 @@ char easytolower(char in){
 queue<pair<string,int>> word_queue;
 
 static unordered_map<string, Node*> allmap;
-static chrono::duration<double> time_span;
 
 void indexing(string word,int filename){
   transform(word.begin(), word.end(), word.begin(), easytolower);
   Node *n = new Node();
   n->add(filename);
+  mtex.lock();
   pair<unordered_map<string, Node*>::iterator, bool>  status=allmap.emplace(word,n);
 
   if(!status.second){
     allmap[word]->add(filename);
     delete n;
   }
+  mtex.unlock();
 }
 
 bool isAlphabet(char ch){
@@ -78,12 +88,12 @@ bool isAlphabet(char ch){
 /*
 List file and read it to
 */
-void fileRead(string dir,int start,int count)
+void fileRead(string dir,int start,int count,int step)
 {
   string filename;
   string word="";
   ifstream infile;
-  for (int i = start; i <= count; i++)
+  for (int i = start; i <= count; i+=step)
   {
     filename=dir+"/file"+to_string(i)+".txt";
     infile.open(filename.c_str());
@@ -94,8 +104,11 @@ void fileRead(string dir,int start,int count)
         word +=ch;
       }else{
         if(word.size()>0){
-//          indexing(word,i);
-//          word_queue.push(make_pair(word,i));
+          t1=chrono::high_resolution_clock::now();
+          indexing(word,i);
+          t2=chrono::high_resolution_clock::now();
+
+          time_span+=chrono::duration_cast<chrono::duration<double>>(t2 - t1);
         }
         word="";
       }
@@ -120,18 +133,8 @@ int fileCount (string dir)
   return count-2;
 }
 
-void job2(){
-  while(haveNext||!word_queue.empty()){
-    if(!word_queue.empty()){
-      pair<string,int> w=word_queue.front();
-//      indexing(w.first,w.second);
-     word_queue.pop();
-    }
-  }
-}
-
-void jobFile(string dir,int start,int end){
-  fileRead(dir,start,end);
+void jobFile(string dir,int start,int end,int step){
+  fileRead(dir,start,end,step);
 }
 
 int main(int argc, char* const argv[])
@@ -153,6 +156,7 @@ int main(int argc, char* const argv[])
   //TODO  : small thread >2 => nothing
   //        Medium => more is better
   //        Large => CPU utilize not 100%
+/*
   thread j1(fileRead,dir,0,half/2);
   thread j2(fileRead,dir,1+half/2,half);
   thread j3(fileRead,dir,1+half,count-half);
@@ -161,8 +165,12 @@ int main(int argc, char* const argv[])
   j2.join();
   j3.join();
   j4.join();
-/*
-  job.join();
+*/
+
+  thread j1(fileRead,dir,1  ,count,2);
+  thread j2(fileRead,dir,2  ,count,2);
+  j1.join();
+  j2.join();
 
   ofstream of;
   of.open("output");
@@ -174,12 +182,12 @@ int main(int argc, char* const argv[])
     of<<(it->second)->getAll()<<endl;
   }
   of.close();
-
+/*
   chrono::high_resolution_clock::time_point t1=chrono::high_resolution_clock::now();
   chrono::high_resolution_clock::time_point t2=chrono::high_resolution_clock::now();
 
   time_span=chrono::duration_cast<chrono::duration<double>>(t2 - t1);
-  cout<<time_span.count()<<endl;
-*/
+*/  cout<<time_span.count()<<endl;
+
   return 0;
 }

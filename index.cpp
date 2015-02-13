@@ -5,6 +5,7 @@
 #include <queue>
 #include <map>
 #include <unordered_map>
+#include <vector>
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -75,14 +76,14 @@ bool isAlphabet(char ch){
 }
 
 /*
-List file and read it to 
+List file and read it to
 */
-void fileRead(string dir,int count)
+void fileRead(string dir,int start,int count)
 {
   string filename;
   string word="";
   ifstream infile;
-  for (int i = 1; i <= count; i++)
+  for (int i = start; i <= count; i++)
   {
     filename=dir+"/file"+to_string(i)+".txt";
     infile.open(filename.c_str());
@@ -94,7 +95,7 @@ void fileRead(string dir,int count)
       }else{
         if(word.size()>0){
 //          indexing(word,i);
-          word_queue.push(make_pair(word,i));
+//          word_queue.push(make_pair(word,i));
         }
         word="";
       }
@@ -129,11 +130,15 @@ void job2(){
   }
 }
 
+void jobFile(string dir,int start,int end){
+  fileRead(dir,start,end);
+}
+
 int main(int argc, char* const argv[])
 {
-  thread job(job2);
+//  thread job(job2);
   string dir = string(argv[1]);
-  cout<<dir<<endl;
+  //cout<<dir<<endl;
   int count=fileCount(dir);
   if(count>3000)
       allmap.reserve(600000);
@@ -142,8 +147,15 @@ int main(int argc, char* const argv[])
   }else{
       allmap.reserve(400000);
   }
-
-  fileRead(dir,count);
+  cout<<count<<endl;
+//  fileRead(dir,count);
+  thread j1(fileRead,dir,0,1000);
+  thread j2(fileRead,dir,1001,2000);
+  thread j3(fileRead,dir,2001,3000);
+  j1.join();
+  j2.join();
+  j3.join();
+/*
   job.join();
 
   ofstream of;
@@ -162,6 +174,6 @@ int main(int argc, char* const argv[])
 
   time_span=chrono::duration_cast<chrono::duration<double>>(t2 - t1);
   cout<<time_span.count()<<endl;
-
+*/
   return 0;
 }

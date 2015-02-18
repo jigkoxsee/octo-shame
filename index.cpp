@@ -165,6 +165,11 @@ int main(int argc, char* const argv[])
   cout<<"2 "<<word_queue[2].size()<<endl;
   cout<<"3 "<<word_queue[3].size()<<endl;
   cout<<"4 "<<word_queue[4].size()<<endl;
+  
+  for(int i=0;i<word_queue.size();i++){
+    word_queue[1]
+  }
+
 
 /*
   ofstream of;

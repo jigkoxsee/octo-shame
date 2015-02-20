@@ -10,9 +10,12 @@
 #include <sstream>
 #include <thread>
 #include <algorithm>
+#include <mutex>
 
 using namespace std;
 string dir;
+mutex mtex;
+static unordered_map<string, vector<int>*> allmap;
 
 char lower(char in){
   if(in<='Z' && in>='A')
@@ -20,42 +23,36 @@ char lower(char in){
   return in;
 }
 
-static unordered_map<string, vector<int>*> allmap;
-
 void indexing(string word,int filename){
-  transform(word.begin(), word.end(), word.begin(), lower);
   vector<int> *n = new vector<int>;
   if(n->empty()||n->back()!=filename){
     n->push_back(filename);
   }
+  mtex.lock();
   pair<unordered_map<string, vector<int>*>::iterator, bool>  status=allmap.emplace(word,n);
+  mtex.unlock();
 
   if(!status.second){
-
+    mtex.lock();
     if(allmap[word]->empty()||allmap[word]->back()!=filename){
       allmap[word]->push_back(filename);
     }
+    mtex.unlock();
 
     delete n;
   }
-}
 
-bool isAlphabet(char ch){
-  if((ch>='a'&&ch<='z')||(ch>='A'&&ch<='Z')){
-    return true;
-  }
-  return false;
 }
 
 /*
-List file and read it to 
+List file and read it to
 */
-void fileRead(string dir,int count)
+void fileRead(int start,int count)
 {
   string filename;
   string word="";
   ifstream infile;
-  for (int i = 1; i <= count; i++)
+  for (int i = start; i <= count; i++)
   {
     filename=dir+"/file"+to_string(i)+".txt";
     infile.open(filename.c_str());
@@ -65,7 +62,8 @@ void fileRead(string dir,int count)
       if(isalpha(ch)){
         word +=ch;
       }else{
-        if(word.size()>0){
+        if(word.size()>0){      
+          transform(word.begin(), word.end(), word.begin(), lower);
           indexing(word,i);
         }
         word="";
@@ -74,7 +72,6 @@ void fileRead(string dir,int count)
     infile.close();
   }
 }
-
 
 int fileCount (string dir)
 {
@@ -94,15 +91,16 @@ int main(int argc, char* const argv[])
 {
   dir = string(argv[1]);
   int count=fileCount(dir);
-/*  if(count>3000)
+  if(count>3000)
       allmap.reserve(600000);
   else if(count>6500) {
       allmap.reserve(2400000);
   }else{
       allmap.reserve(400000);
   }
-*/
-  fileRead(dir,count);
+
+
+  fileRead(1,count);
 
   ofstream of;
   of.open("output");
